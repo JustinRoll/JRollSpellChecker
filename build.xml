@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<project default="buildWinInstaller">
+
+	<property name="execJarBaseName" value="SwtProjectTemplate" />
+	<property name="orgName" value="CHANGE_THIS_ORGANIZATION_NAME" />
+	<property name="mainClassFullName" value="com.sbcc.edu.jrollspellchecker.MainWindow" />
+	<property name="version" value="1.0.0.0" />
+
+	<target name="init">
+		<tstamp>
+			<format property="curYear" pattern="yyyy" />
+		</tstamp>
+	</target>
+
+	<!--  Build the executable jar -->
+	<target name="buildExecJar" depends="init">
+		<jar destfile="${execJarBaseName}.jar" basedir="bin">
+			<manifest>
+				<attribute name="Built-By" value="${user.name}" />
+				<attribute name="Implementation-Version" value="${version} ${TODAY}" />
+				<attribute name="Main-Class" value="${mainClassFullName}" />
+				<attribute name="Class-Path" value="lib/commons-io-1.4.jar  lib/org.eclipse.core.commands_3.5.0.I20090525-2000.jar  lib/org.eclipse.equinox.common_3.5.0.v20090520-1800.jar  lib/org.eclipse.jface_3.5.0.I20090525-2000.jar  lib/org.eclipse.osgi_3.5.0.v20090520.jar  lib/org.eclipse.swt.win32.win32.x86_3.5.0.v3550b.jar  lib/org.eclipse.swt_3.5.0.v3550b.jar" />
+			</manifest>
+		</jar>
+	</target>
+
+	<!--  Build the Windows .exe file -->
+	<target name="buildWinExe" depends="buildExecJar">
+		<property name="launch4j.dir" location="C:\Program Files\launch4j\" />
+		<taskdef name="launch4j" classname="net.sf.launch4j.ant.Launch4jTask" classpath="${launch4j.dir}/launch4j.jar:${launch4j.dir}/lib/xstream.jar" />
+		<launch4j>
+			<config headerType="gui" jar="${execJarBaseName}.jar" outfile="${execJarBaseName}.exe" errTitle="${execJarBaseName}" icon="launch4j\icon.ico">
+				<jre minVersion="1.4.0" />
+				<splash file="launch4j\splash.bmp" waitForWindow="true" timeout="60" timeoutErr="false" />
+				<versionInfo fileVersion="${version}" txtFileVersion="${version}" fileDescription="${execJarBaseName}" copyright="2008" productVersion="${version}" txtProductVersion="${version}" productName="${execJarBaseName}" companyName="" internalName="${execJarBaseName}" originalFilename="${execJarBaseName}.exe" />
+			</config>
+		</launch4j>
+	</target>
+
+	<!--  Build the Windows installer -->
+	<target name="buildWinInstaller" depends="buildWinExe">
+		<!-- Create new installer script from the installer template, and replace the SwtProjectTemplate and the company name tokens -->
+		<delete file="nsis/installer.nsi" />
+		<copy file="nsis/installertemplate.nsi" tofile="nsis/installer.nsi" />
+		<replace file="nsis/installer.nsi" token="OrgName" value="${orgName}" />
+		<replace file="nsis/installer.nsi" token="SwtProjectTemplate" value="${execJarBaseName}" />
+
+		<!-- Create new license file from the template, and replace tokens -->
+		<delete file="nsis/license.txt" />
+		<copy file="nsis/licensetemplate.txt" tofile="nsis/license.txt" />
+		<replace file="nsis/license.txt" token="--YEAR--" value="${curYear}" />
+		<replace file="nsis/license.txt" token="--OWNER--" value="${orgName}" />
+		<replace file="nsis/license.txt" token="--ORGANIZATION--" value="${orgName}" />
+
+		<!-- Execute NSIS -->
+		<property name="makeNsis" location="C:\Program Files\NSIS\makensis.exe" />
+		<property name="file" location="nsis\installer.nsi" />
+		<exec executable="${makeNsis}">
+			<arg value="/V2" />
+			<arg value="/NOCD" />
+			<arg value="${file}" />
+		</exec>
+	</target>
+
+</project>
